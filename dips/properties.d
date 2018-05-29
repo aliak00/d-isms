@@ -255,7 +255,7 @@ unittest {
 */
 unittest {
     struct S2 {
-        int value;
+        Value value;
     }
     struct S1 {
         S2 s2_;
@@ -337,5 +337,21 @@ unittest {
         static assert(__traits(compiles, s.rw_aux += 3));
     }
 }
+
+/*
+    ++prop
+
+    Lowered to:
+    {
+        prop = s.opUnary!"++"()
+    }
+
+    prop++
+
+    Lowered to:
+    {
+        (auto before = prop;), prop = s.opUnary!"++"();
+    }
+*/
 
 void main() {}

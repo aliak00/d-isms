@@ -140,8 +140,7 @@ unittest {
         1. It is an @property free function with two parameters (F2)
         1. It is an @property method with one parameter (M1)
     
-    It is illegal to assign to a free function with one parmeter that is not @property
-    It is illegal to assign to a method with one parameter that is not @property
+    It is illegal to assign to a function that is not @property
 */
 unittest {
     void f(Value) {}
@@ -158,7 +157,7 @@ unittest {
 // ===================================================================
 /*
     If prop is a property, &prop or &a.prop obey the normal rules of function/delegate access.
-    They do not take the address of the returned value implicitly. To do so, one must use &(prop) or &(a.prop).
+    They do not take the address of the returned value. To do so, one must use &(prop) or &(a.prop).
 */
 
 // ===================================================================
@@ -222,31 +221,37 @@ unittest {
         __temp op= value;
         prop = __temp;
     }
-
-    alias R = typeof(typeof(prop).init op= value);
-    static if (!is(R == void))
-    {
-         auto __temp = prop;
-        __temp op= value;
-        prop = __temp;
-    }
-    else
-        if (!empty) {
-            C();
-        }
 */
 unittest {
     struct SS {
-        private int i_;
-        @property Return r() { return 3; }
-        @property Return rw() { return i_; }
+        private Value i_;
+        @property Value r() { return i_; }
+        @property Value rw() { return i_; }
         @property void rw(Value i) { i_ = i; }
-        int m;
+        @property ref Value rw_aux() { return i_; }
     }
 
-    SS s;
-    auto a1 = s.m++;
-    auto a0 = s.r++;
+    {
+        SS s0, s1;
+        immutable value = 3;
+        // static assert(__traits(compiles, s0.rw += value)); // CHANGE
+        {
+            auto __temp = s1.rw;
+            __temp += value;
+            s1.rw = __temp;
+        }
+        // assert(s0.rw == s1.rw);
+    }
+
+    {
+        SS s;
+        static assert(!__traits(compiles, s.r += 3));
+    }
+
+    {
+        SS s;
+        static assert(__traits(compiles, s.rw_aux += 3));
+    }
 }
 
 void main() {}

@@ -132,27 +132,6 @@ unittest {
 }
 
 // ===================================================================
-// Assignment
-// ===================================================================
-/*
-    To be able to assign to an @property function one of the following must be true
-        1. It is an @property free function with one parameter (F1)
-        1. It is an @property free function with two parameters (F2)
-        1. It is an @property method with one parameter (M1)
-    
-    It is illegal to assign to a function that is not @property
-*/
-unittest {
-    void f(Value) {}
-    struct S {
-        void f(Value) {}
-    }
-    // static assert(!__traits(compiles, {f = Value.init;})); // CHANGE
-    S s;
-    // static assert(!__traits(compiles, {s.f = Value.init;})); // CHANGE
-}
-
-// ===================================================================
 // Address of
 // ===================================================================
 /*
@@ -208,6 +187,111 @@ unittest {
 }
 
 // ===================================================================
+// Assignment
+// ===================================================================
+/*
+    To be able to assign to an @property function one of the following must be true
+        1. It is an @property free function with one parameter (F1)
+        1. It is an @property free function with two parameters (F2)
+        1. It is an @property method with one parameter (M1)
+
+    It is illegal to assign to a function that is not @property
+*/
+unittest {
+    void f(Value) {}
+    struct S {
+        void f(Value) {}
+    }
+    // static assert(!__traits(compiles, {f = Value.init;})); // CHANGE
+    S s;
+    // static assert(!__traits(compiles, {s.f = Value.init;})); // CHANGE
+}
+
+// ===================================================================
+// Dot operator and assignment
+// ===================================================================
+/*
+    To be able to assign to more than one level deep after property access the property
+    has to be a read-write property such that:
+
+    prop0.prop1.prop2....propN.propM.value = newValue;
+
+    Lowered to:
+    {
+        auto newProp1 = prop0.prop1;
+        {
+            auto newProp2= newProp1.prop2;
+            {
+                // ...
+                {
+                    auto newPropM = newPropN.propM;
+                    newPropM.value = newValue;
+                    newPropN = newPropM;
+                }
+                // ...
+            }
+            newProp1.prop2 = newProp2
+        }
+        prop0.prop1 = newProp1;
+    }
+
+    The algorithm may be executed for each inner field that is a property itself and applies to assignment
+    operators.
+
+    It stops at the point where fieldN is not a property, i.e.
+
+    prop0.prop1.obj0.obj1.value = newValue;
+
+    Lowered to:
+    {
+        auto newProp1 = prop0.prop1;
+        {
+            auto newObj = newProp1.obj0;
+            newObj0.obj1.value = newValue;
+            newProp1.obj0 = newObj0;
+        }
+        prop0.prop1 = newProp1;
+    }
+*/
+unittest {
+    struct S2 {
+        int value;
+    }
+    struct S1 {
+        S2 s2_;
+        @property S2 prop1() {
+            return s2_;
+        }
+        @property void prop1(S2 s2) {
+            s2_ = s2;
+        }
+    }
+    struct S0 {
+        S1 s1_;
+        @property S1 prop0() {
+            return s1_;
+        }
+        @property void prop0(S1 s1) {
+            s1_ = s1;
+        }
+    }
+
+    {
+        S0 a, b;
+        immutable value = 3;
+        // static assert(__traits(compiles, a.prop0.prop1.value = value)); // CHANGE
+        {
+            auto newProp0 = b.prop0;
+            auto newProp1 = newProp0.prop1;
+            newProp1.value = value;
+            newProp0.prop1 = newProp1;
+            b.prop0 = newProp0;
+        }
+        // assert(a == b);
+    }
+}
+
+// ===================================================================
 // Operators
 // ===================================================================
 /*
@@ -232,15 +316,15 @@ unittest {
     }
 
     {
-        SS s0, s1;
+        SS a, b;
         immutable value = 3;
-        // static assert(__traits(compiles, s0.rw += value)); // CHANGE
+        // static assert(__traits(compiles, a.rw += value)); // CHANGE
         {
-            auto __temp = s1.rw;
+            auto __temp = b.rw;
             __temp += value;
-            s1.rw = __temp;
+            b.rw = __temp;
         }
-        // assert(s0.rw == s1.rw);
+        // assert(a.rw == b.rw);
     }
 
     {

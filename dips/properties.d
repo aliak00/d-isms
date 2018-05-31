@@ -218,21 +218,24 @@ unittest {
 
     Lowered to:
     {
-        auto newProp1 = prop0.prop1;
+        auto newProp0 = prop0;
         {
-            auto newProp2= newProp1.prop2;
+            auto newProp1 = newProp0.prop1;
             {
-                // ...
+                auto newProp2 = newProp1.prop2;
                 {
-                    auto newPropM = newPropN.propM;
-                    newPropM.value = newValue;
-                    newPropN = newPropM;
+                    // ...
+                    {
+                        auto newPropM = newPropN.propM;
+                        newPropM.value = newValue;
+                        newPropN = newPropM;
+                    }
+                    // ...
                 }
-                // ...
+                newProp1.prop2 = newProp2
             }
-            newProp1.prop2 = newProp2
+            newProp0.prop1 = newProp1;
         }
-        prop0.prop1 = newProp1;
     }
 
     The algorithm may be executed for each inner field that is a property itself and applies to assignment

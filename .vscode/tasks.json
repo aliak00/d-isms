@@ -6,7 +6,7 @@
         {
             "label": "run",
             "type": "shell",
-            "command": "rdmd -unittest ${file}",
+            "command": "dmd -i -unittest -run ${file}",
             "group": {
                 "kind": "build",
                 "isDefault": true

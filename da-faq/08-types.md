@@ -1,6 +1,6 @@
 # What the type!
 
-## Enums with base types
+## Beware of enums with numberic base types
 
 ```d
 auto f(short s) { return "short"; }
@@ -24,6 +24,31 @@ What would the above print? Not what you expect. This is what happens:
 `f(int)` matches `a` perfectly, right from the get go, without any conversions necessary.
 
 `A.a` doesn’t fit in either `f(int)`, `f(short)` so it has to go through some conversions to get in to any of them, and all conversions are folded in to one conversion so converting from `A` -> `int` -> `short` carried the same weight as converting from `A` -> `int`. And so we have two conversion paths from an `A` type, and one can be given to `f(int)` and the other to `f(short)`. Now D chooses the most specialized one, which is the short version.
+
+## Beware of Enums with string base types too
+
+It's ironic for a language that is so vocally against implicit casts. But if you ever have a string argument followed by a defaulted string-based enum argument, you can easily forget to add a parameter or two to a function and everything will compile happily.
+
+```d
+enum Algorithm : string {
+  one = "one",
+  two = "two,
+}
+
+void encrypt(string data, string password, Algorithm algo = Algorithm.one) {
+  writeln(data, " will be encrypted with ", password);
+}
+void decrypt(string data, string password, Algorithm algo = Algorithm.one) {
+  writeln(data, " will be decrypted with ", password);
+}
+
+void main() {
+  string data = "data"
+  string password = "password";
+  data.encrypt(password, Algorithm.one);
+  data.decrypt(Algorithm.one); // compiles, but not what you want
+}
+```
 
 ## Bools are numbers, kinda.
 

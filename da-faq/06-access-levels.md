@@ -60,13 +60,13 @@ public import a.impl: A;
 public void doAmazingStuff(A a) { ... }
 ```
 
-Now `doAmazingStuff` cannot access private members of `A`. The downside of this is of course that you now cannot access private members of `A`. So your extension function is not a “first class” citizen of `class A` anymore.
+Now `doAmazingStuff` cannot access private members of `A`. The potntial downside of this is of course that you now cannot access private members of `A`. So your extension function is not a “first class” citizen of `class A` anymore.
 
 ## No sealed classes
 
 If you have a situation where you want a class to be inheritable at module scope, but not publicly, as in Scala sealed classes, there is no explicit access level that supports this.
 
-**Fix**:
+**Partial-Fix**:
 
 You can use private constructors to achieve the same:
 
@@ -76,3 +76,5 @@ class Sealed {
 }
 class Public : Sealed { ... }
 ```
+
+But then you can't instantiate the class outside the module either. So

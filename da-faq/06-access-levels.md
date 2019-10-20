@@ -1,6 +1,6 @@
 # Where be thy access level?
 
-Since D decided to use the module as the main unit of encapsulation, there are a few patterns that come up in software development that D either cannot be done, or requires jumping through Einstonian hoops to achieve.
+Since D decided to use the module as the main unit of encapsulation, there are a few patterns that come up in software development that D either cannot be done, or requires jumping through some hoops to achieve.
 
 ## Class private is not really private
 
@@ -45,7 +45,7 @@ You must be thinking what’s wrong with the above. Well, the thing is that priv
 
 In the example above, `class A`’s API is such that you want to count all the times the variable `i` was read. But, since private is not really private, one particular function in that module has just accessed `_i` directly, so everything is now off.
 
-**Hack-Fix**:
+**Parital-Fix**:
 
 If a class has any internal state that is hidden within private access, put that class in its own module.
 
@@ -60,7 +60,37 @@ public import a.impl: A;
 public void doAmazingStuff(A a) { ... }
 ```
 
-Now `doAmazingStuff` cannot access private members of `A`. The potntial downside of this is of course that you now cannot access private members of `A`. So your extension function is not a “first class” citizen of `class A` anymore.
+Now `doAmazingStuff` cannot access private members of `A`. The potential downside of this is of course that you now cannot access private members of `A`. So your extension function is not a “first class” citizen of `class A` anymore.
+
+**Fix**
+
+In the case where you want `doAmazingStuff` to be able to access some non-publicly accessible variables of a type, but you still want the type to be able to protect its own data, you can use a package:
+
+```
+=== type/package.d
+module type;
+
+struct Type {
+  public a;
+  package b; // can be a property with hidden state.
+  private c;
+}
+
+=== type/friends.d
+module type.friends;
+
+void doAmazingStuff(Type t) {
+  t.b; // ok
+  // t.c; // error
+}
+
+=== somemodule.d
+import type;
+Type t; // ok
+t.a; // ok
+// t.b; // nope
+// t.c; // nope
+```
 
 ## No sealed classes
 
@@ -68,7 +98,7 @@ If you have a situation where you want a class to be inheritable at module scope
 
 **Partial-Fix**:
 
-You can use private constructors to achieve the same:
+You can use private constructors to partially achieve the same functionality:
 
 ```d
 class Sealed {
@@ -77,4 +107,15 @@ class Sealed {
 class Public : Sealed { ... }
 ```
 
-But then you can't instantiate the class outside the module either. So
+But then you can't instantiate the class outside the module.
+
+**Fix**
+
+You can instantiate the class outside the module, however, of you create a type constructor for `Sealed`. So:
+
+```d
+// Inside same file as class Sealed
+auto makeSealed() {
+  return Searled();
+}
+```
